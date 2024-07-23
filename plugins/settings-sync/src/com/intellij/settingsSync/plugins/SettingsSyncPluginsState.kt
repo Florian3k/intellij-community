@@ -14,7 +14,8 @@ import org.jetbrains.annotations.ApiStatus
 
 @ApiStatus.Internal
 @Serializable
-data class SettingsSyncPluginsState(val plugins: Map<@Serializable(with=PluginIdSerializer::class) PluginId, PluginData>) {
+data class SettingsSyncPluginsState(
+  val plugins: Map<@Serializable(with=PluginIdSerializer::class) PluginId, PluginData>, val repos: Set<String>/* = setOf()*/) {
   @Serializable
   data class PluginData(
     val enabled: Boolean = true,
@@ -48,7 +49,13 @@ internal object SettingsSyncPluginsStateMerger {
     result += diffBetweenBaseAndNew.modified
     result -= diffBetweenBaseAndNew.removed.keys
 
-    return SettingsSyncPluginsState(result)
+    // TODO decide on merging algorithm
+    // currently the same as above
+    val newerAdded = newerState.repos - baseState.repos
+    val newerRemoved = baseState.repos - newerState.repos
+    val repos = olderState.repos + newerAdded - newerRemoved
+
+    return SettingsSyncPluginsState(result, repos)
   }
 
   private fun calcDiff(baseState: SettingsSyncPluginsState, state: SettingsSyncPluginsState): Diff {

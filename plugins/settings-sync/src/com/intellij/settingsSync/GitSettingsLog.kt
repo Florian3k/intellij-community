@@ -186,7 +186,7 @@ class GitSettingsLog(private val settingsSyncStorage: Path,
     }
 
     if (snapshot.plugins != null) {
-      val sortedState = SettingsSyncPluginsState(snapshot.plugins.plugins.toSortedMap())
+      val sortedState = SettingsSyncPluginsState(snapshot.plugins.plugins.toSortedMap(), snapshot.plugins.repos)
       val pluginsState = json.encodeToString(sortedState)
       pluginsFile.write(pluginsState)
       addCommand.addFilepattern("$METAINFO_FOLDER/$PLUGINS_FILE")
@@ -497,7 +497,7 @@ class GitSettingsLog(private val settingsSyncStorage: Path,
     return smartMergeFile(pluginJson, ideBranchTip, cloudBranchTip,
                           deserializer = { json.decodeFromString<SettingsSyncPluginsState>(it) },
                           serializer = { json.encodeToString(it) },
-                          merger = { base, cloud, ide -> mergePluginStates(base ?: SettingsSyncPluginsState(emptyMap()), cloud, ide) })
+                          merger = { base, cloud, ide -> mergePluginStates(base ?: SettingsSyncPluginsState(emptyMap(), setOf()), cloud, ide) })
   }
 
   private fun <T> smartMergeFile(

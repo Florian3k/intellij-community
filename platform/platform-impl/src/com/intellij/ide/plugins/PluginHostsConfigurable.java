@@ -276,6 +276,7 @@ public final class PluginHostsConfigurable implements Configurable.NoScroll, Con
     for (UrlInfo item : myModel.getItems()) {
       list.add(item.name);
     }
+    // TODO dispatch change
   }
 
   private static @NotNull String correctRepositoryRule(@NotNull String input) {

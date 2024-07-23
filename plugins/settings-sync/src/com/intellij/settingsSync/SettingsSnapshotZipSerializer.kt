@@ -142,7 +142,7 @@ internal object SettingsSnapshotZipSerializer {
     catch (e: Throwable) {
       LOG.error("Failed to read $pluginsFile", e)
     }
-    return SettingsSyncPluginsState(emptyMap())
+    return SettingsSyncPluginsState(emptyMap(), setOf())
   }
 
   private fun serializeMetaInfo(snapshotMetaInfo: SettingsSnapshot.MetaInfo): ByteArray {

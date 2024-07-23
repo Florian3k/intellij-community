@@ -11,6 +11,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.SettingsCategory
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.PluginId
+import com.intellij.openapi.updateSettings.impl.UpdateSettings
 import com.intellij.settingsSync.*
 import com.intellij.settingsSync.config.BUNDLED_PLUGINS_ID
 import com.intellij.settingsSync.plugins.SettingsSyncPluginsState.PluginData
@@ -28,7 +29,7 @@ internal class SettingsSyncPluginManager(private val cs: CoroutineScope) : Dispo
 
   private val PLUGIN_EXCEPTIONS = setOf("com.intellij.ja", "com.intellij.ko", "com.intellij.zh")
 
-  internal var state = SettingsSyncPluginsState(emptyMap())
+  internal var state = SettingsSyncPluginsState(emptyMap(), setOf())
     private set
 
   private val sessionUninstalledPlugins = HashSet<String>()
@@ -89,7 +90,8 @@ internal class SettingsSyncPluginManager(private val cs: CoroutineScope) : Dispo
       }
 
       logChangedState("Updated component state by the state of IDE.", oldPlugins, newPlugins)
-      state = SettingsSyncPluginsState(newPlugins)
+      val newRepos = UpdateSettings.getInstance().storedPluginHosts.toSet()
+      state = SettingsSyncPluginsState(newPlugins, newRepos)
       return state
     }
   }
@@ -159,7 +161,7 @@ internal class SettingsSyncPluginManager(private val cs: CoroutineScope) : Dispo
       val newPlugins = newState.plugins
 
       logChangedState("Pushed new changes to the IDE", oldPlugins, newPlugins)
-      state = SettingsSyncPluginsState(newPlugins)
+      state = SettingsSyncPluginsState(newPlugins, newState.repos)
 
       val removedPluginData = oldPlugins.keys - newPlugins.keys
       for (id in removedPluginData) {
@@ -202,6 +204,10 @@ internal class SettingsSyncPluginManager(private val cs: CoroutineScope) : Dispo
         }
       }
     }
+
+    val list = UpdateSettings.getInstance().storedPluginHosts
+    list.clear()
+    list.addAll(newState.repos)
 
     changePluginsStateAndReport(pluginsToDisable, false)
     changePluginsStateAndReport(pluginsToEnable, true)
@@ -290,7 +296,7 @@ internal class SettingsSyncPluginManager(private val cs: CoroutineScope) : Dispo
         if (shouldSaveState(descriptor)) {
           val oldPlugins = state.plugins
           val newPlugins = oldPlugins + (pluginId to getPluginData(descriptor))
-          state = SettingsSyncPluginsState(newPlugins)
+          state = SettingsSyncPluginsState(newPlugins, state.repos)
           firePluginsStateChangeEvent(state)
         }
       }
@@ -304,7 +310,7 @@ internal class SettingsSyncPluginManager(private val cs: CoroutineScope) : Dispo
         if (shouldSaveState(descriptor)) {
           val oldPlugins = state.plugins
           val newPlugins = oldPlugins + (pluginId to getPluginData(descriptor))
-          state = SettingsSyncPluginsState(newPlugins)
+          state = SettingsSyncPluginsState(newPlugins, state.repos)
           firePluginsStateChangeEvent(state)
         }
       }
@@ -345,7 +351,7 @@ internal class SettingsSyncPluginManager(private val cs: CoroutineScope) : Dispo
             }
           }
           if (oldPlugins != newPlugins) {
-            state = SettingsSyncPluginsState(newPlugins.toMap())
+            state = SettingsSyncPluginsState(newPlugins.toMap(), state.repos)
             firePluginsStateChangeEvent(state)
           }
         }
